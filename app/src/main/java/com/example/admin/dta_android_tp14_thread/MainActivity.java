@@ -11,37 +11,49 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MainActivity extends AppCompatActivity {
 
     ProgressBar progressBar;
-    String progressId = "PROGRESS_BAR";
 
+    // Création de la clé utilisé dans le bundle =
+    private final String PROGRESS_BAR_ID = "PROGRESS_BAR";
+
+    // Handler utilisé pour la communication entre le thread en background et l'UIThread
     Handler handler = new Handler(){
         public void handleMessage(Message msg) {
-            int p=msg.getData().getInt("PROGRESS_BAR");
+            int p = msg.getData().getInt(PROGRESS_BAR_ID);
             progressBar.setProgress(p);
         }
 
     };
 
+    // l'AtomicBoolean gère la déstruction et la mise en pause du thread
     AtomicBoolean isRunning = new AtomicBoolean(false);
     AtomicBoolean isPausing = new AtomicBoolean(false);
 
+
+    // Création de l'activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Définition de la progress bar
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
 
     }
 
+    // Méthode du lancement de l'activity
     @Override
     public void onStart(){
         super.onStart();
 
         progressBar.setProgress(0);
 
-        Thread thread = new Thread(new Runnable() {
+        // Définition du thread de background
+        Thread background = new Thread(new Runnable() {
 
+            // Le bundle porte le message et sera transmis au handler
             Bundle messageBundle = new Bundle();
+
+            // Le message qui sera échangé entre le thread et le handler
             Message monMessage;
 
             @Override
@@ -53,10 +65,17 @@ public class MainActivity extends AppCompatActivity {
                         }
                         Thread.sleep(300);
 
-
+                        /* ENVOIE DU MESSAGE AU HANDLER */
+                        // Instanciation du message
                         monMessage = handler.obtainMessage();
-                        messageBundle.putInt(progressId, i);
+
+                        // Ajout de donnée au Bundle
+                        messageBundle.putInt(PROGRESS_BAR_ID, i);
+
+                        // Ajout du Bundle au message
                         monMessage.setData(messageBundle);
+
+                        // Envoie du message
                         handler.sendMessage(monMessage);
                     }
                 }catch (Throwable t){
@@ -67,9 +86,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         isRunning.set(true);
-        isPausing.set(true);
+        isPausing.set(false);
 
-        thread.start();
+        // Lancement du Thread
+        background.start();
     }
 
 
